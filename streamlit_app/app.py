@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
+
 
 # Function to import and merge data
 def import_and_merge_data():
@@ -8,9 +10,9 @@ def import_and_merge_data():
     if uploaded_files:
         dfs = []
         datetime_columns = []
-        for file in uploaded_files:
+        for i, file in enumerate(uploaded_files):
             df = pd.read_csv(file)
-            datetime_column = st.sidebar.selectbox(f'Select datetime column for {file.name}', options=df.columns)
+            datetime_column = st.sidebar.selectbox(f'Select datetime column for File {i+1}', options=df.columns, key=f'datetime_column_{i}')
             datetime_columns.append(datetime_column)
             dfs.append(df)
         data = merge_dataframes(dfs, datetime_columns)
@@ -39,17 +41,37 @@ def plot_data(data, selected_columns, datetime_column):
 
     st.plotly_chart(fig)
 
+
+# Function to plot correlation matrix as heatmap
+def plot_correlation_heatmap(data, selected_features):
+    # Calculate correlation matrix for selected features
+    corr_matrix = data[selected_features].corr()
+    fig = px.imshow(corr_matrix,
+                    labels=dict(x="Features", y="Features", color="Correlation"),
+                    x=corr_matrix.columns,
+                    y=corr_matrix.columns,
+                    color_continuous_scale='Viridis')
+    fig.update_layout(title='Correlation Matrix Heatmap')
+    st.plotly_chart(fig)
+
+
 # Main function
 def main():
-    st.title('Your Streamlit App')
+    st.title('XGBoost Forecaster App')
 
-    # Sidebar - Import and merge data
     st.sidebar.header('Import and Merge Data')
     data = import_and_merge_data()
-    
+
     if data is not None:
         # Display imported data
         st.subheader('Imported and Merged Data')
+        # Sidebar - Drop selected columns
+        drop_columns = st.sidebar.checkbox("Drop selected columns")
+        if drop_columns:
+            columns_to_drop = st.sidebar.multiselect('Select columns to drop', data.columns)
+            if columns_to_drop:
+                data = data.drop(columns=columns_to_drop)
+
         st.write(data.head())
 
         # Sidebar - Select columns for visualization
@@ -63,6 +85,24 @@ def main():
             # Plot selected columns
             st.subheader('Visualization')
             plot_data(data, selected_columns, datetime_column)
+
+        data_analysis = st.sidebar.checkbox("Data Analysis")
+
+        if data_analysis:
+            st.sidebar.subheader('Data Analysis Tools')
+            selected_features = st.sidebar.multiselect('Select features for analysis', data.columns)
+
+            if st.sidebar.button('Summary Statistics'):
+                st.subheader('Summary Statistics')
+                if data is not None and selected_features:
+                    st.write(data[selected_features].describe())
+
+            if st.sidebar.button('Correlation Matrix Heatmap'):
+                st.subheader('Correlation Matrix Heatmap')
+                if data is not None and selected_features:
+                    plot_correlation_heatmap(data, selected_features)
+
+
 
 if __name__ == '__main__':
     main()
