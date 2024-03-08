@@ -8,7 +8,7 @@ from data_analyzer import (DataAnalyzer, correlation_matrix, distribution, outli
                            outlier_statistics, feature_target_correlations, pca_visualization)
 from feature_engineer import (FeatureEngineering, acf_pacf_plots, pacf_selected_lags, create_lags,
                               rolling_window, time_features, add_holidays)
-from ml_processor import MLProcessor
+from ml_processor import MLModelSelector
 import streamlit.components.v1 as stc
 import numpy as np
 import os
@@ -134,11 +134,11 @@ def main():
 
                 st.subheader("Add PACF-based Lags")
                 with st.expander("Use PACF to Auto-select Lag Features"):
-                    pacf_selected_lags(fe)
+                    pacf_selected_lags(fe, datetime_column)
 
                 st.subheader("Lag Features")
                 with st.expander("Create Lag Features"):
-                    create_lags(fe)
+                    create_lags(fe, datetime_column)
 
                 st.subheader("Rolling Window Features")
                 with st.expander("Create Rolling Window Features"):
@@ -146,11 +146,11 @@ def main():
 
                 st.subheader("Time-Based Features")
                 with st.expander("Extract Time-Based Features"):
-                    time_features(fe)
+                    time_features(fe, datetime_column)
 
                 st.subheader("Add Holidays")
                 with st.expander("Add Holidays"):
-                    add_holidays(fe)
+                    add_holidays(fe, datetime_column)
 
                 data_processor.data = fe.data
                 data_processor.save_data_to_csv("dataset.csv")
@@ -161,6 +161,70 @@ def main():
 
     elif selected == "Machine Learning":
         st.header("Machine Learning")
+
+        if os.path.exists("dataset.csv"):
+            # Load dataset
+            data_processor.read_data_from_csv("dataset.csv")
+            data = data_processor.data
+
+            # Clean column names
+            data.columns = [col.replace('[', '').replace(']', '').replace('<', '') for col in data.columns]
+
+            datetime_column = st.selectbox('Select Datetime Column (for index)', options=data.columns)
+            # Set the selected column as the datetime index
+            data[datetime_column] = pd.to_datetime(data[datetime_column])
+            data.set_index(datetime_column, inplace=True)
+            
+            target_column = st.selectbox('Select Target Column', options=[col for col in data.columns if col != datetime_column])
+
+            # Input fields for model hyperparameters
+            st.subheader("Hyperparameters")
+            # Example for XGBoost hyperparameters
+            xgb_learning_rate = st.number_input('XGBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+            xgb_max_depth = st.number_input('XGBoost Max Depth', value=5, min_value=1, max_value=10, step=1)
+            xgb_n_estimators = st.number_input('XGBoost N Estimators', value=100, min_value=10, max_value=1000, step=10)
+
+            # For LightGBM hyperparameters
+            lgbm_learning_rate = st.number_input('LightGBM Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+            lgbm_max_depth = st.number_input('LightGBM Max Depth', value=-1, min_value=-1, max_value=50, step=1)  # -1 for no limit
+            lgbm_n_estimators = st.number_input('LightGBM N Estimators', value=100, min_value=10, max_value=1000, step=10)
+
+            # For CatBoost hyperparameters
+            catboost_learning_rate = st.number_input('CatBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+            catboost_depth = st.number_input('CatBoost Depth', value=6, min_value=1, max_value=16, step=1)
+            catboost_iterations = st.number_input('CatBoost Iterations', value=1000, min_value=10, max_value=5000, step=10)
+
+            # Collecting the hyperparameters into dictionaries for each model
+            lgbm_params = {'learning_rate': lgbm_learning_rate, 'max_depth': lgbm_max_depth, 'n_estimators': lgbm_n_estimators}
+            catboost_params = {'learning_rate': catboost_learning_rate, 'depth': catboost_depth, 'iterations': catboost_iterations}
+            xgb_params = {'learning_rate': xgb_learning_rate, 'max_depth': xgb_max_depth, 'n_estimators': xgb_n_estimators}
+            
+
+            # Initialize model selector with the dataset and hyperparameters
+            model_selector = MLModelSelector(data, target_column=target_column, xgb_params=xgb_params, lgbm_params=lgbm_params, catboost_params=catboost_params)
+            
+            st.subheader("Train and Evaluate")
+            if st.button('Train Models and Evaluate'):
+                with st.spinner('Training and Evaluating...'):
+                    model_selector.fit()
+                    # Using the new method that returns both metrics and predictions
+                    mse_table, predictions_df = model_selector.evaluate_and_predict_models()
+                    st.success('Training and evaluation completed successfully!')
+                    
+                    # Displaying the metrics
+                    st.write("Model Evaluation Metrics:")
+                    st.table(mse_table)
+                    
+                    # Displaying the predictions
+                    st.write("Model Predictions vs. Actual Values:")
+                    st.table(predictions_df)
+
+        else:
+            st.warning("Dataset file not found. Please upload or create a dataset.")
+
+
+
+            
 
 if __name__ == "__main__":
     main()
