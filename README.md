@@ -1,2 +1,2 @@
-# XGBoost-Streamlit-App
+# Timeseries-Forecaster
 Data analysis, feature engineering and XGBoost algorithm.
