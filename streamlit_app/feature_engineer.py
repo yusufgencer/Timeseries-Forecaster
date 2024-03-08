@@ -129,7 +129,7 @@ def acf_pacf_plots(fe):
     fe.analyze_autocorrelation(target_column, nlags=nlags)
     st.pyplot(plt)  # Assuming analyze_autocorrelation method plots the figure or use st.plotly_chart for Plotly
 
-def pacf_selected_lags(fe):
+def pacf_selected_lags(fe, datetime_column):
     column_to_analyze_pacf = st.selectbox('Select a column for PACF-based Lags', options=fe.data.columns)
     max_lag = st.number_input('Max lags to consider for PACF', min_value=1, max_value=24*7, value=72)
     min_lag = st.number_input('Min lags to consider for PACF', min_value=1, max_value=24*7, value=24)
@@ -138,7 +138,7 @@ def pacf_selected_lags(fe):
         fe.add_pacf_based_lags(datetime_column, column_to_analyze_pacf, min_lag, max_lag)
         st.success(f"Significant Lags were used to automatically create new Lag Features based on PACF for {column_to_analyze_pacf}.")
 
-def create_lags(fe):
+def create_lags(fe, datetime_column):
     columns_to_lag = st.multiselect('Select columns for lag features', options=fe.data.columns)
     lags = st.text_input('Enter lag periods (comma-separated, e.g., 1,2,3)', '1')
     apply_lags = st.button('Apply Lag Features', key='apply_basic_lags')
@@ -187,7 +187,7 @@ def rolling_window(fe):
         
         st.write(fe.data.head())
 
-def time_features(fe):
+def time_features(fe, datetime_column):
     options = ['year', 'quarter', 'month', 'week_of_year', 'day', 'weekday', 'hour', 'is_weekend']
     selected_time_features = st.multiselect('Select time-based features to extract', options=options, default=options)
     apply_time_features = st.button('Apply Time-Based Features')
@@ -196,7 +196,7 @@ def time_features(fe):
         st.success("Selected time-based features applied.")
         st.write(fe.data.head())
 
-def add_holidays(fe):
+def add_holidays(fe, datetime_column):
     country_code = st.selectbox('Select country', options=list(holidays.list_supported_countries().keys()))
     apply_holidays = st.button('Apply Holidays')
     if apply_holidays:
