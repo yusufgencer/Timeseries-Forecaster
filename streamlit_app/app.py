@@ -177,32 +177,40 @@ def main():
             
             target_column = st.selectbox('Select Target Column', options=[col for col in data.columns if col != datetime_column])
 
-            # Input fields for model hyperparameters
+           
             st.subheader("Hyperparameters")
-            # Example for XGBoost hyperparameters
-            xgb_learning_rate = st.number_input('XGBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
-            xgb_max_depth = st.number_input('XGBoost Max Depth', value=5, min_value=1, max_value=10, step=1)
-            xgb_n_estimators = st.number_input('XGBoost N Estimators', value=100, min_value=10, max_value=1000, step=10)
+            hyperparameter_mode = st.selectbox("Hyperparameter Mode", ["Manual", "Auto"])
+            if hyperparameter_mode == "Manual":
+                # Example for XGBoost hyperparameters
+                xgb_learning_rate = st.number_input('XGBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+                xgb_max_depth = st.number_input('XGBoost Max Depth', value=5, min_value=1, max_value=10, step=1)
+                xgb_n_estimators = st.number_input('XGBoost N Estimators', value=100, min_value=10, max_value=1000, step=10)
 
-            # For LightGBM hyperparameters
-            lgbm_learning_rate = st.number_input('LightGBM Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
-            lgbm_max_depth = st.number_input('LightGBM Max Depth', value=-1, min_value=-1, max_value=50, step=1)  # -1 for no limit
-            lgbm_n_estimators = st.number_input('LightGBM N Estimators', value=100, min_value=10, max_value=1000, step=10)
+                # For LightGBM hyperparameters
+                lgbm_learning_rate = st.number_input('LightGBM Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+                lgbm_max_depth = st.number_input('LightGBM Max Depth', value=-1, min_value=-1, max_value=50, step=1)  # -1 for no limit
+                lgbm_n_estimators = st.number_input('LightGBM N Estimators', value=100, min_value=10, max_value=1000, step=10)
 
-            # For CatBoost hyperparameters
-            catboost_learning_rate = st.number_input('CatBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
-            catboost_depth = st.number_input('CatBoost Depth', value=6, min_value=1, max_value=16, step=1)
-            catboost_iterations = st.number_input('CatBoost Iterations', value=1000, min_value=10, max_value=5000, step=10)
+                # For CatBoost hyperparameters
+                catboost_learning_rate = st.number_input('CatBoost Learning Rate', value=0.1, min_value=0.0001, max_value=1.0, step=0.01)
+                catboost_depth = st.number_input('CatBoost Depth', value=6, min_value=1, max_value=16, step=1)
+                catboost_iterations = st.number_input('CatBoost Iterations', value=1000, min_value=10, max_value=5000, step=10)
 
-            # Collecting the hyperparameters into dictionaries for each model
-            lgbm_params = {'learning_rate': lgbm_learning_rate, 'max_depth': lgbm_max_depth, 'n_estimators': lgbm_n_estimators}
-            catboost_params = {'learning_rate': catboost_learning_rate, 'depth': catboost_depth, 'iterations': catboost_iterations}
-            xgb_params = {'learning_rate': xgb_learning_rate, 'max_depth': xgb_max_depth, 'n_estimators': xgb_n_estimators}
-            
+                # Collecting the hyperparameters into dictionaries for each model
+                lgbm_params = {'learning_rate': lgbm_learning_rate, 'max_depth': lgbm_max_depth, 'n_estimators': lgbm_n_estimators}
+                catboost_params = {'learning_rate': catboost_learning_rate, 'depth': catboost_depth, 'iterations': catboost_iterations}
+                xgb_params = {'learning_rate': xgb_learning_rate, 'max_depth': xgb_max_depth, 'n_estimators': xgb_n_estimators}
+                
 
-            # Initialize model selector with the dataset and hyperparameters
-            model_selector = MLModelSelector(data, target_column=target_column, xgb_params=xgb_params, lgbm_params=lgbm_params, catboost_params=catboost_params)
-            
+                # Initialize model selector with the dataset and hyperparameters
+                model_selector = MLModelSelector(data, target_column=target_column, hyperparameter_mode=hyperparameter_mode, xgb_params=xgb_params, lgbm_params=lgbm_params, catboost_params=catboost_params)
+            else:
+                # Indicate automatic hyperparameter tuning will be applied
+                st.write("Automatic hyperparameter tuning will be applied for all models.")
+                # Initialize model selector with the dataset and hyperparameters
+                model_selector = MLModelSelector(data, target_column=target_column, hyperparameter_mode=hyperparameter_mode)
+        
+
             st.subheader("Train and Evaluate")
             if st.button('Train Models and Evaluate'):
                 with st.spinner('Training and Evaluating...'):
