@@ -28,8 +28,9 @@ class MLModelSelector:
         Prepares the data by splitting it into training and testing sets based on a split date or split ratio.
         """
         if self.split_date:
-            train = self.data.loc[:self.split_date]
-            test = self.data.loc[self.split_date:]
+            split_date = pd.to_datetime(self.split_date)
+            train = self.data[self.data.index < split_date]
+            test = self.data[self.data.index >= split_date]
         else:
             split_idx = int(len(self.data) * self.split_ratio)
             train = self.data.iloc[:split_idx]
