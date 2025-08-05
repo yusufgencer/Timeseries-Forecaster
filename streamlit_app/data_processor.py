@@ -82,12 +82,11 @@ class DataProcessor:
         except FileNotFoundError:
             st.error(f"File {filename} not found.")
 
-    def clear_data(self):
-        """Clears the current DataFrame and deletes 'dataset.csv' if it exists."""
-        self.data = None # Clear the DataFrame
-        dataset_path = "dataset.csv"
-        if os.path.exists(dataset_path):
-            os.remove(dataset_path)  # Delete the file
+    def clear_data(self, filename):
+        """Clear the current DataFrame and delete the provided file if it exists."""
+        self.data = None  # Clear the DataFrame
+        if os.path.exists(filename):
+            os.remove(filename)
 
     def drop_rows_in_time_range(self, datetime_column, start_date, end_date):
         """
@@ -134,19 +133,19 @@ class DataProcessor:
             return False
 
       
-def droping_columns(data_processor):
-    data_processor.read_data_from_csv("dataset.csv")
+def droping_columns(data_processor, filename):
+    data_processor.read_data_from_csv(filename)
     columns_to_drop = st.multiselect('Select columns to drop', data_processor.data.columns)
     if columns_to_drop:
         if st.button("Drop selected columns"):
             if data_processor.preprocess_data(columns_to_drop):
-                data_processor.save_data_to_csv("dataset.csv")
+                data_processor.save_data_to_csv(filename)
                 st.success("Selected rows within the time range have been successfully dropped.")
             else:
                 st.error("No rows were dropped. Please check the selected time range and datetime column.")
 
-def droping_rows(data_processor):
-    data_processor.read_data_from_csv("dataset.csv")
+def droping_rows(data_processor, filename):
+    data_processor.read_data_from_csv(filename)
     st.write("Select time range and datetime column")
     start_date = st.date_input('Start Date')
     end_date = st.date_input('End Date')
@@ -154,18 +153,18 @@ def droping_rows(data_processor):
     if st.button('Drop Rows'):
         success_rows = data_processor.drop_rows_in_time_range(datetime, start_date=start_date, end_date=end_date)
         if success_rows:
-            data_processor.save_data_to_csv("dataset.csv")
+            data_processor.save_data_to_csv(filename)
             st.success("Selected rows within the time range have been successfully dropped.")
         else:
             st.error("No rows were dropped. Please check the selected time range and datetime column.")
 
-def rename_column(data_processor):
-    data_processor.read_data_from_csv("dataset.csv")
+def rename_column(data_processor, filename):
+    data_processor.read_data_from_csv(filename)
     old_column = st.selectbox('Select column to rename', data_processor.data.columns)
     new_column = st.text_input("Write new name for selected column")
     if st.button("Apply rename changes"):
         if data_processor.rename_column(old_column, new_column):
-            data_processor.save_data_to_csv("dataset.csv")
+            data_processor.save_data_to_csv(filename)
             st.success("Selected rows within the time range have been successfully dropped.")
         else:
             st.error("No changes applied please be sure selected columns and write new name")

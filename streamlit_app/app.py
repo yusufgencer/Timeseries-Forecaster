@@ -14,6 +14,7 @@ import numpy as np
 import os
 import holidays
 import matplotlib.pyplot as plt
+import uuid
 
 
 def plot_data(data, selected_columns, datetime_column):
@@ -29,8 +30,11 @@ def plot_data(data, selected_columns, datetime_column):
     st.plotly_chart(fig)
 
 def main():
-    image = "streamlit_app/timelogo.png" 
+    image = "streamlit_app/timelogo.png"
     st.title('Timeseries Forecaster App')
+    if "data_file" not in st.session_state:
+        st.session_state["data_file"] = f"dataset_{uuid.uuid4().hex}.csv"
+    data_file = st.session_state["data_file"]
     data_processor = DataProcessor()
  
     with st.sidebar:
@@ -41,25 +45,25 @@ def main():
         st.header('Data Preprocessing')
         data_processor.import_and_merge_data()
         if data_processor.data is not None:
-                data_processor.save_data_to_csv("dataset.csv")
+                data_processor.save_data_to_csv(data_file)
 
-        if os.path.exists("dataset.csv") and os.path.getsize("dataset.csv") > 0:
-            data_processor.read_data_from_csv("dataset.csv")
+        if os.path.exists(data_file) and os.path.getsize(data_file) > 0:
+            data_processor.read_data_from_csv(data_file)
 
         if st.button("Delete Current Data"):
-            data_processor.clear_data()
+            data_processor.clear_data(data_file)
             st.success("Data has been cleared.")
 
         st.subheader("Drop or Rename")
         with st.expander("Drop selected rows or columns"):
             if data_processor.data is not None:
-                data_processor.save_data_to_csv("dataset.csv")
+                data_processor.save_data_to_csv(data_file)
                 if st.checkbox("Drop selected columns"):
-                    droping_columns(data_processor)
+                    droping_columns(data_processor, data_file)
                 if st.checkbox("Drop selected time range rows"):
-                    droping_rows(data_processor)
+                    droping_rows(data_processor, data_file)
                 if st.checkbox("Rename selected column"):
-                    rename_column(data_processor)
+                    rename_column(data_processor, data_file)
                 st.write(data_processor.data)    
             else:
                 st.warning("Please upload a CSV file to enable data manipulation and visualization features.")
@@ -80,7 +84,7 @@ def main():
 
     elif selected == "Data Analysis":
         st.header('Data Analysis') 
-        data_processor.read_data_from_csv("dataset.csv")
+        data_processor.read_data_from_csv(data_file)
         if data_processor.data is not None:
             analyzer = DataAnalyzer(data_processor.data)
             
@@ -117,8 +121,8 @@ def main():
     elif selected == "Feature Engineering":
         st.header('Feature Engineering')
 
-        if os.path.exists("dataset.csv"):
-            data_processor.read_data_from_csv("dataset.csv")
+        if os.path.exists(data_file):
+            data_processor.read_data_from_csv(data_file)
 
             if not data_processor.data.empty:
                 fe = FeatureEngineering(data_processor.data)
@@ -153,18 +157,18 @@ def main():
                     add_holidays(fe, datetime_column)
 
                 data_processor.data = fe.data
-                data_processor.save_data_to_csv("dataset.csv")
+                data_processor.save_data_to_csv(data_file)
             else:
-                st.warning("No data found. Please check your 'dataset.csv'.")
+                st.warning("No data found. Please check your uploaded dataset.")
         else:
             st.warning("Dataset file not found. Please upload or create a dataset.")
 
     elif selected == "Machine Learning":
         st.header("Machine Learning")
 
-        if os.path.exists("dataset.csv"):
+        if os.path.exists(data_file):
             # Load dataset
-            data_processor.read_data_from_csv("dataset.csv")
+            data_processor.read_data_from_csv(data_file)
             data = data_processor.data
 
             # Clean column names
